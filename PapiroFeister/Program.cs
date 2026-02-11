@@ -1,2 +1,4 @@
-﻿using var game = new PapiroFeister.Game1();
+﻿using PapiroFeister;
+
+using var game = new Game1();
 game.Run();
