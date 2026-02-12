@@ -23,7 +23,7 @@ public sealed class PaperWorldSphere : System.IDisposable
         _graphicsDevice = graphicsDevice;
         Radius = radius;
 
-        _paperTexture = PaperTextureGenerator.GenerateTexture(graphicsDevice);
+        _paperTexture = PaperTextureGenerator.GenerateTextureWithoutDots(graphicsDevice);
         _paperEffect = new BasicEffect(graphicsDevice)
         {
             TextureEnabled = true,

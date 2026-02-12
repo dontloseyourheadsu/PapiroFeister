@@ -18,36 +18,61 @@ public static class PaperTextureGenerator
     private static readonly Color DoodleColorB = new Color(143, 226, 255);
     private static readonly Color DoodleColorC = new Color(255, 229, 153);
     private const int FallbackSeed = 77123;
-    private static readonly string TextureFilePath = Path.Combine("Content", "Textures", "paper_cartoon.bmp");
+    private static readonly string DottedTextureFilePath = Path.Combine("Content", "Textures", "paper_cartoon.bmp");
+    private static readonly string NoDotsTextureFilePath = Path.Combine("Content", "Textures", "paper_cartoon_nodots.bmp");
 
-    private static Texture2D _paperTexture;
+    private static Texture2D _paperTextureWithDots;
+    private static Texture2D _paperTextureWithoutDots;
     private static PerlinNoise _noise;
 
     public static Texture2D GenerateTexture(GraphicsDevice graphicsDevice)
     {
-        if (_paperTexture != null)
-            return _paperTexture;
+        return GenerateTextureInternal(graphicsDevice, withDots: true);
+    }
 
-        string fullTexturePath = Path.Combine(AppContext.BaseDirectory, TextureFilePath);
+    public static Texture2D GenerateTextureWithoutDots(GraphicsDevice graphicsDevice)
+    {
+        return GenerateTextureInternal(graphicsDevice, withDots: false);
+    }
+
+    private static Texture2D GenerateTextureInternal(GraphicsDevice graphicsDevice, bool withDots)
+    {
+        Texture2D cachedTexture = withDots ? _paperTextureWithDots : _paperTextureWithoutDots;
+        if (cachedTexture != null)
+            return cachedTexture;
+
+        string textureFilePath = withDots ? DottedTextureFilePath : NoDotsTextureFilePath;
+        string fullTexturePath = Path.Combine(AppContext.BaseDirectory, textureFilePath);
         if (File.Exists(fullTexturePath))
         {
             using FileStream fileStream = File.OpenRead(fullTexturePath);
-            _paperTexture = Texture2D.FromStream(graphicsDevice, fileStream);
-            return _paperTexture;
+            cachedTexture = Texture2D.FromStream(graphicsDevice, fileStream);
+            if (withDots)
+                _paperTextureWithDots = cachedTexture;
+            else
+                _paperTextureWithoutDots = cachedTexture;
+
+            return cachedTexture;
         }
 
         _noise = new PerlinNoise(FallbackSeed);
 
-        _paperTexture = new Texture2D(graphicsDevice, TextureWidth, TextureHeight);
+        cachedTexture = new Texture2D(graphicsDevice, TextureWidth, TextureHeight);
         Color[] textureData = new Color[TextureWidth * TextureHeight];
 
-        GenerateCartoonPaperTexture(textureData);
+        GenerateCartoonPaperTexture(textureData, withDots);
 
-        _paperTexture.SetData(textureData);
-        return _paperTexture;
+        cachedTexture.SetData(textureData);
+
+        if (withDots)
+            _paperTextureWithDots = cachedTexture;
+        else
+            _paperTextureWithoutDots = cachedTexture;
+
+        return cachedTexture;
     }
 
-    private static void GenerateCartoonPaperTexture(Color[] textureData)
+    private static void GenerateCartoonPaperTexture(Color[] textureData, bool withDots)
     {
         for (int y = 0; y < TextureHeight; y++)
         {
@@ -65,7 +90,9 @@ public static class PaperTextureGenerator
         }
 
         DrawNotebookLines(textureData);
-        DrawDoodles(textureData);
+
+        if (withDots)
+            DrawDoodles(textureData);
     }
 
     private static void DrawNotebookLines(Color[] textureData)
@@ -133,8 +160,10 @@ public static class PaperTextureGenerator
 
     public static void Cleanup()
     {
-        _paperTexture?.Dispose();
-        _paperTexture = null;
+        _paperTextureWithDots?.Dispose();
+        _paperTextureWithDots = null;
+        _paperTextureWithoutDots?.Dispose();
+        _paperTextureWithoutDots = null;
         _noise = null;
     }
 }

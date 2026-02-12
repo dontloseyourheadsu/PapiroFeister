@@ -12,6 +12,7 @@ public class Game1 : Game
 {
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
+    private Texture2D _backgroundPaperTexture;
 
     private PaperWorldSphere _paperWorldSphere;
     private BasicEffect _characterEffect;
@@ -59,6 +60,7 @@ public class Game1 : Game
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
+        _backgroundPaperTexture = PaperTextureGenerator.GenerateTexture(GraphicsDevice);
         _paperWorldSphere = new PaperWorldSphere(GraphicsDevice, radius: 30f, tessellation: 64);
 
         (_characterVertexBuffer, _characterIndexBuffer, _characterIndexCount) =
@@ -154,7 +156,7 @@ public class Game1 : Game
 
         _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque);
         _spriteBatch.Draw(
-            _paperWorldSphere.PaperTexture,
+            _backgroundPaperTexture,
             new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
             Color.White);
         _spriteBatch.End();
