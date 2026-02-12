@@ -1,4 +1,4 @@
-import struct,random,os; w=h=512; p='/home/dontloseyourheadsu/Documents/GitHub/PapiroFeister/PapiroFeister/Content/Textures/paper_cartoon.bmp'; os.makedirs(os.path.dirname(p),exist_ok=True); random.seed(77123); pad=(4-(w*3)%4)%4; data=(w*3+pad)*h; size=54+data; f=open(p,'wb'); f.write(b'BM'); f.write(struct.pack('<IHHI',size,0,0,54)); f.write(struct.pack('<IIIHHIIIIII',40,w,h,1,24,0,data,2835,2835,0,0)); dots=[(random.randint(10,w-10),random.randint(10,h-10),random.randint(2,5),random.choice([(255,153,198),(143,226,255),(255,229,153)])) for _ in range(100)];
+import struct,random,os; w=h=512; p=os.path.join('PapiroFeister','Content','Textures','paper_cartoon.bmp'); os.makedirs(os.path.dirname(p),exist_ok=True); random.seed(77123); pad=(4-(w*3)%4)%4; data=(w*3+pad)*h; size=54+data; f=open(p,'wb'); f.write(b'BM'); f.write(struct.pack('<IHHI',size,0,0,54)); f.write(struct.pack('<IIIHHIIIIII',40,w,h,1,24,0,data,2835,2835,0,0)); dots=[(random.randint(10,w-10),random.randint(10,h-10),random.randint(2,5),random.choice([(255,153,198),(143,226,255),(255,229,153)])) for _ in range(100)];
 for y in range(h):
  yy=h-1-y; row=bytearray();
  for x in range(w):
