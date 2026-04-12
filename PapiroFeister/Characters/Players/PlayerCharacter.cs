@@ -28,7 +28,7 @@ public sealed class PlayerCharacter : IDisposable
     private readonly short[] _quadIndices;
     private readonly Texture2D _texture;
     private readonly Texture2D _shadowTexture;
-    private readonly float _worldRadius;
+    private readonly float _playableHalfSize;
 
     private Vector3 _stabilizedRight = Vector3.Right;
 
@@ -36,10 +36,10 @@ public sealed class PlayerCharacter : IDisposable
     public Vector3 Velocity { get; private set; }
     public Vector3 CameraForwardOnSurface { get; private set; } = Vector3.Forward;
 
-    public PlayerCharacter(GraphicsDevice graphicsDevice, float worldRadius)
+    public PlayerCharacter(GraphicsDevice graphicsDevice, float playableHalfSize)
     {
         _graphicsDevice = graphicsDevice;
-        _worldRadius = worldRadius;
+        _playableHalfSize = MathF.Max(playableHalfSize, 4f);
         _quadVertices = new VertexPositionTexture[4];
         _decalVertices = new VertexPositionTexture[4];
         _quadIndices = [0, 1, 2, 2, 1, 3];
@@ -66,14 +66,15 @@ public sealed class PlayerCharacter : IDisposable
             Alpha = 1f
         };
 
-        float startRadius = worldRadius + ColliderRadius;
-        Position = new Vector3(0f, startRadius, 0f);
+        Position = new Vector3(0f, ColliderRadius, 0f);
         Velocity = Vector3.Zero;
     }
 
-    public void Update(float dt, KeyboardState keyboardState, KeyboardState previousKeyboardState, float worldRadius)
+    public void Update(float dt, KeyboardState keyboardState, KeyboardState previousKeyboardState, float playableHalfSize)
     {
-        Vector3 currentUp = SafeNormalize(Position, Vector3.Up);
+        float activePlayableHalfSize = MathF.Max(playableHalfSize, _playableHalfSize);
+
+        Vector3 currentUp = Vector3.Up;
         Vector3 forwardOnSurface = ProjectOnPlane(CameraForwardOnSurface, currentUp);
         if (forwardOnSurface.LengthSquared() < 0.0001f)
             forwardOnSurface = ProjectOnPlane(Vector3.Forward, currentUp);
@@ -106,32 +107,39 @@ public sealed class PlayerCharacter : IDisposable
                 CameraForwardOnSurface.Normalize();
         }
 
-        Velocity += -currentUp * Gravity * dt;
+        Velocity += Vector3.Down * Gravity * dt;
 
-        float surfaceRadius = worldRadius + ColliderRadius;
-        bool isGrounded = Position.Length() <= surfaceRadius + GroundedTolerance;
+        bool isGrounded = Position.Y <= ColliderRadius + GroundedTolerance;
         bool jumpPressed = keyboardState.IsKeyDown(Keys.Space) && !previousKeyboardState.IsKeyDown(Keys.Space);
         if (isGrounded && jumpPressed)
             Velocity += currentUp * JumpImpulse;
 
-        Velocity *= MathF.Pow(GroundDrag, dt * 60f);
+        float dragFactor = MathF.Pow(GroundDrag, dt * 60f);
+        Velocity = new Vector3(Velocity.X * dragFactor, Velocity.Y, Velocity.Z * dragFactor);
         Position += Velocity * dt;
 
-        float distanceFromCenter = Position.Length();
-        if (distanceFromCenter < surfaceRadius)
+        if (Position.Y < ColliderRadius)
         {
-            Vector3 normal = SafeNormalize(Position, Vector3.Up);
-            Position = normal * surfaceRadius;
-
-            float normalVelocity = Vector3.Dot(Velocity, normal);
-            if (normalVelocity < 0f)
-                Velocity -= normal * normalVelocity;
+            Position = new Vector3(Position.X, ColliderRadius, Position.Z);
+            if (Velocity.Y < 0f)
+                Velocity = new Vector3(Velocity.X, 0f, Velocity.Z);
         }
+
+        float maxPosition = activePlayableHalfSize - ColliderRadius;
+        float clampedX = MathHelper.Clamp(Position.X, -maxPosition, maxPosition);
+        float clampedZ = MathHelper.Clamp(Position.Z, -maxPosition, maxPosition);
+
+        if (clampedX != Position.X)
+            Velocity = new Vector3(0f, Velocity.Y, Velocity.Z);
+        if (clampedZ != Position.Z)
+            Velocity = new Vector3(Velocity.X, Velocity.Y, 0f);
+
+        Position = new Vector3(clampedX, Position.Y, clampedZ);
     }
 
     public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition)
     {
-        Vector3 upFromCenter = SafeNormalize(Position, Vector3.Up);
+        Vector3 upFromCenter = Vector3.Up;
         Vector3 toCameraOnSurface = ProjectOnPlane(cameraPosition - Position, upFromCenter);
         if (toCameraOnSurface.LengthSquared() < 0.0001f)
             toCameraOnSurface = ProjectOnPlane(CameraForwardOnSurface, upFromCenter);
@@ -263,7 +271,7 @@ public sealed class PlayerCharacter : IDisposable
 
     private void DrawContactShadow(Matrix view, Matrix projection, Vector3 upFromCenter, Vector3 forwardOnSurface, Vector3 rightOnSurface)
     {
-        float heightAboveGround = MathF.Max(0f, Position.Length() - (_worldRadius + ColliderRadius));
+        float heightAboveGround = MathF.Max(0f, Position.Y - ColliderRadius);
         float shadowStrength = MathHelper.Clamp(1f - (heightAboveGround * 0.55f), 0.28f, 1f);
         float shadowScale = MathHelper.Lerp(0.6f, 1f, shadowStrength);
         float horizontalRadius = ShadowHorizontalRadius * shadowScale;
