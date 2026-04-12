@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using PapiroFeister.Characters.Players;
 using PapiroFeister.Textures.Generators;
-using PapiroFeister.Worlds.Spheres;
+using PapiroFeister.Worlds.Islands;
 
 namespace PapiroFeister;
 
@@ -14,7 +14,7 @@ public class Game1 : Game
     private SpriteBatch _spriteBatch;
     private Texture2D _backgroundPaperTexture;
 
-    private PaperWorldSphere _paperWorldSphere;
+    private PaperIslandWorld _paperIslandWorld;
     private PlayerCharacter _playerCharacter;
 
     private Matrix _view;
@@ -49,8 +49,8 @@ public class Game1 : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _backgroundPaperTexture = PaperTextureGenerator.GenerateTexture(GraphicsDevice);
-        _paperWorldSphere = new PaperWorldSphere(GraphicsDevice, radius: 30f, tessellation: 64);
-        _playerCharacter = new PlayerCharacter(GraphicsDevice, _paperWorldSphere.Radius);
+        _paperIslandWorld = new PaperIslandWorld(GraphicsDevice, playableHalfSize: 24f, oceanHalfSize: 80f);
+        _playerCharacter = new PlayerCharacter(GraphicsDevice, _paperIslandWorld.PlayableHalfSize);
 
         UpdateCamera();
     }
@@ -63,7 +63,7 @@ public class Game1 : Game
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         var keyboardState = Keyboard.GetState();
 
-        _playerCharacter.Update(dt, keyboardState, _previousKeyboardState, _paperWorldSphere.Radius);
+        _playerCharacter.Update(dt, keyboardState, _previousKeyboardState, _paperIslandWorld.PlayableHalfSize);
 
         UpdateCamera();
         _previousKeyboardState = keyboardState;
@@ -85,7 +85,7 @@ public class Game1 : Game
         GraphicsDevice.DepthStencilState = DepthStencilState.Default;
         GraphicsDevice.RasterizerState = new RasterizerState { CullMode = CullMode.CullCounterClockwiseFace };
 
-        _paperWorldSphere.Draw(_view, _projection);
+        _paperIslandWorld.Draw(_view, _projection);
         _playerCharacter.Draw(_view, _projection, _cameraPosition);
 
         base.Draw(gameTime);
@@ -93,7 +93,7 @@ public class Game1 : Game
 
     private void UpdateCamera()
     {
-        Vector3 localUp = SafeNormalize(_playerCharacter.Position, Vector3.Up);
+        Vector3 localUp = Vector3.Up;
         Vector3 lookDirection = ProjectOnPlane(_playerCharacter.CameraForwardOnSurface, localUp);
         if (lookDirection.LengthSquared() < 0.0001f)
             lookDirection = ProjectOnPlane(Vector3.Forward, localUp);
@@ -112,22 +112,13 @@ public class Game1 : Game
         return vector - Vector3.Dot(vector, planeNormal) * planeNormal;
     }
 
-    private static Vector3 SafeNormalize(Vector3 value, Vector3 fallback)
-    {
-        if (value.LengthSquared() < 0.0001f)
-            return fallback;
-
-        value.Normalize();
-        return value;
-    }
-
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
             PaperTextureGenerator.Cleanup();
             _spriteBatch?.Dispose();
-            _paperWorldSphere?.Dispose();
+            _paperIslandWorld?.Dispose();
             _playerCharacter?.Dispose();
         }
 
