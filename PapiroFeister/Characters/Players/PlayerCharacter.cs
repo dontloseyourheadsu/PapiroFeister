@@ -272,8 +272,12 @@ public sealed class PlayerCharacter : IDisposable
     private void DrawContactShadow(Matrix view, Matrix projection, Vector3 upFromCenter, Vector3 forwardOnSurface, Vector3 rightOnSurface)
     {
         float heightAboveGround = MathF.Max(0f, Position.Y - ColliderRadius);
-        float shadowStrength = MathHelper.Clamp(1f - (heightAboveGround * 0.55f), 0.28f, 1f);
-        float shadowScale = MathHelper.Lerp(0.6f, 1f, shadowStrength);
+        float vanishHeight = 2.7f;
+        float shadowStrength = MathHelper.Clamp(1f - (heightAboveGround / vanishHeight), 0f, 1f);
+        if (shadowStrength <= 0.01f)
+            return;
+
+        float shadowScale = MathHelper.Lerp(0.08f, 1f, shadowStrength);
         float horizontalRadius = ShadowHorizontalRadius * shadowScale;
         float forwardRadius = ShadowForwardRadius * shadowScale;
 
@@ -291,7 +295,7 @@ public sealed class PlayerCharacter : IDisposable
         _decalEffect.Projection = projection;
         _decalEffect.World = Matrix.Identity;
         _decalEffect.DiffuseColor = new Vector3(0f, 0f, 0f);
-        _decalEffect.Alpha = 0.42f * shadowStrength;
+        _decalEffect.Alpha = 0.5f * shadowStrength;
 
         foreach (EffectPass pass in _decalEffect.CurrentTechnique.Passes)
         {

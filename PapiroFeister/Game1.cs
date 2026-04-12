@@ -24,7 +24,7 @@ public class Game1 : Game
     private KeyboardState _previousKeyboardState;
 
     private const float CameraHorizontalDistance = 7f;
-    private const float CameraFloorAngleDeg = 55f;
+    private const float CameraFloorAngleDeg = 44f;
 
     public Game1()
     {
@@ -85,7 +85,7 @@ public class Game1 : Game
         GraphicsDevice.DepthStencilState = DepthStencilState.Default;
         GraphicsDevice.RasterizerState = new RasterizerState { CullMode = CullMode.CullCounterClockwiseFace };
 
-        _paperIslandWorld.Draw(_view, _projection);
+        _paperIslandWorld.Draw(_view, _projection, (float)gameTime.TotalGameTime.TotalSeconds);
         _playerCharacter.Draw(_view, _projection, _cameraPosition);
 
         base.Draw(gameTime);
