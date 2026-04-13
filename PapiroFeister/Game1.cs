@@ -85,7 +85,7 @@ public class Game1 : Game
         GraphicsDevice.DepthStencilState = DepthStencilState.Default;
         GraphicsDevice.RasterizerState = new RasterizerState { CullMode = CullMode.CullCounterClockwiseFace };
 
-        _paperIslandWorld.Draw(_view, _projection, (float)gameTime.TotalGameTime.TotalSeconds);
+        _paperIslandWorld.Draw(_view, _projection, _cameraPosition, (float)gameTime.TotalGameTime.TotalSeconds);
         _playerCharacter.Draw(_view, _projection, _cameraPosition);
 
         base.Draw(gameTime);

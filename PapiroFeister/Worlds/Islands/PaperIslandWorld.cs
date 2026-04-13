@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using PapiroFeister.Textures.Generators;
+using PapiroFeister.Worlds.Objects;
 
 namespace PapiroFeister.Worlds.Islands;
 
@@ -15,6 +16,7 @@ public sealed class PaperIslandWorld : System.IDisposable
     private readonly BasicEffect _surfaceEffect;
     private readonly BasicEffect _borderEffect;
     private readonly BasicEffect _waveEffect;
+    private readonly BasicEffect _objectEffect;
     private readonly Texture2D _paperTexture;
     private readonly Random _random;
 
@@ -25,6 +27,7 @@ public sealed class PaperIslandWorld : System.IDisposable
     private readonly short[] _borderIndices;
     private readonly VertexPositionColor[] _rockVertices;
     private readonly short[] _rockIndices;
+    private readonly List<WorldObject> _worldObjects = [];
 
     private readonly Vector2[] _coastPoints;
     private readonly float[] _coastHeights;
@@ -76,6 +79,15 @@ public sealed class PaperIslandWorld : System.IDisposable
             Alpha = 1f
         };
 
+        _objectEffect = new BasicEffect(graphicsDevice)
+        {
+            TextureEnabled = false,
+            LightingEnabled = false,
+            VertexColorEnabled = true,
+            DiffuseColor = Color.White.ToVector3(),
+            Alpha = 1f
+        };
+
         _oceanVertices = CreateQuad(oceanHalfSize, y: OceanLevel, uvScale: 1.05f);
 
         (Vector2[] baseCoastPoints, float[] baseCoastHeights) = GenerateCoastline(PlayableHalfSize);
@@ -83,9 +95,11 @@ public sealed class PaperIslandWorld : System.IDisposable
         (_landVertices, _landIndices) = BuildLandMesh(_coastPoints, _coastHeights);
         (_borderVertices, _borderIndices) = BuildBorderMesh(_coastPoints, _coastHeights, thickness: 0.17f);
         (_rockVertices, _rockIndices) = BuildRocks(_coastPoints, minDistance: 1.1f, maxDistance: 5.6f);
+
+        InitializeWorldObjects();
     }
 
-    public void Draw(Matrix view, Matrix projection, float totalTimeSeconds)
+    public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition, float totalTimeSeconds)
     {
         UpdateWaves(totalTimeSeconds);
 
@@ -137,6 +151,7 @@ public sealed class PaperIslandWorld : System.IDisposable
         }
 
         DrawWaves(view, projection);
+        DrawDecorations(view, projection, cameraPosition);
 
         _graphicsDevice.DepthStencilState = previousDepthStencil;
         _graphicsDevice.BlendState = previousBlend;
@@ -148,6 +163,9 @@ public sealed class PaperIslandWorld : System.IDisposable
         _surfaceEffect.Dispose();
         _borderEffect.Dispose();
         _waveEffect.Dispose();
+        _objectEffect.Dispose();
+        foreach (WorldObject worldObject in _worldObjects)
+            worldObject.Dispose();
         _paperTexture.Dispose();
     }
 
@@ -212,6 +230,37 @@ public sealed class PaperIslandWorld : System.IDisposable
                     _waveIndices.Length / 3);
             }
         }
+    }
+
+    private void DrawDecorations(Matrix view, Matrix projection, Vector3 cameraPosition)
+    {
+        _graphicsDevice.BlendState = BlendState.AlphaBlend;
+        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+
+        foreach (WorldObject worldObject in _worldObjects)
+            worldObject.Draw(_graphicsDevice, _objectEffect, view, projection, cameraPosition);
+    }
+
+    private void InitializeWorldObjects()
+    {
+        _worldObjects.Add(new FenceObject(initialPosition: Vector3.Zero, halfSize: PlayableHalfSize));
+
+        float ring = MathF.Max(4f, PlayableHalfSize - 2.8f);
+        const float y = 0.08f;
+        Vector3[] treePositions =
+        [
+            new Vector3(-ring, y, -ring * 0.35f),
+            new Vector3(-ring * 0.22f, y, -ring),
+            new Vector3(ring * 0.52f, y, -ring),
+            new Vector3(ring, y, -ring * 0.18f),
+            new Vector3(ring, y, ring * 0.42f),
+            new Vector3(ring * 0.35f, y, ring),
+            new Vector3(-ring * 0.58f, y, ring),
+            new Vector3(-ring, y, ring * 0.2f)
+        ];
+
+        foreach (Vector3 position in treePositions)
+            _worldObjects.Add(new TreeObject(position));
     }
 
     private static VertexPositionNormalTexture[] CreateQuad(float halfSize, float y, float uvScale)
