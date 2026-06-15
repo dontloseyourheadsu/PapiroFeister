@@ -3,6 +3,8 @@ using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
+using PapiroFeister.Worlds.Objects;
 
 namespace PapiroFeister.Characters.Players;
 
@@ -35,6 +37,7 @@ public sealed class PlayerCharacter : IDisposable
     public Vector3 Position { get; private set; }
     public Vector3 Velocity { get; private set; }
     public Vector3 CameraForwardOnSurface { get; private set; } = Vector3.Forward;
+    public PlayerSkills Skills { get; } = new();
 
     public PlayerCharacter(GraphicsDevice graphicsDevice, float playableHalfSize)
     {
@@ -70,7 +73,7 @@ public sealed class PlayerCharacter : IDisposable
         Velocity = Vector3.Zero;
     }
 
-    public void Update(float dt, KeyboardState keyboardState, KeyboardState previousKeyboardState, float playableHalfSize)
+    public void Update(float dt, KeyboardState keyboardState, KeyboardState previousKeyboardState, float playableHalfSize, IReadOnlyList<WorldObject> worldObjects)
     {
         float activePlayableHalfSize = MathF.Max(playableHalfSize, _playableHalfSize);
 
@@ -135,6 +138,44 @@ public sealed class PlayerCharacter : IDisposable
             Velocity = new Vector3(Velocity.X, Velocity.Y, 0f);
 
         Position = new Vector3(clampedX, Position.Y, clampedZ);
+
+        // Resolve collisions with world objects (e.g. trees, crafting tables)
+        if (worldObjects != null)
+        {
+            foreach (var obj in worldObjects)
+            {
+                if (obj is FenceObject) continue;
+
+                if (obj.IntersectsSphere(Position, ColliderRadius))
+                {
+                    Vector3 toPlayer = Position - obj.Position;
+                    toPlayer.Y = 0f;
+                    float dist = toPlayer.Length();
+                    float minDistance = 1.35f; // Combined radius
+
+                    if (dist < minDistance)
+                    {
+                        if (dist < 0.001f)
+                        {
+                            toPlayer = Vector3.Right;
+                            dist = 1f;
+                        }
+                        else
+                        {
+                            toPlayer.Normalize();
+                        }
+
+                        Position = new Vector3(obj.Position.X + toPlayer.X * minDistance, Position.Y, obj.Position.Z + toPlayer.Z * minDistance);
+
+                        float velocityDot = Vector3.Dot(Velocity, toPlayer);
+                        if (velocityDot < 0f)
+                        {
+                            Velocity -= toPlayer * velocityDot;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void Draw(Matrix view, Matrix projection, Vector3 cameraPosition)

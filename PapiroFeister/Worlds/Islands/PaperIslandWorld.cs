@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using PapiroFeister.Textures.Generators;
 using PapiroFeister.Worlds.Objects;
+using PapiroFeister.Inventory;
 
 namespace PapiroFeister.Worlds.Islands;
 
@@ -42,6 +43,7 @@ public sealed class PaperIslandWorld : System.IDisposable
     private readonly short[] _quadIndices = [0, 1, 2, 2, 1, 3];
 
     public float PlayableHalfSize { get; }
+    public IReadOnlyList<WorldObject> WorldObjects => _worldObjects;
 
     public PaperIslandWorld(GraphicsDevice graphicsDevice, float playableHalfSize = 24f, float oceanHalfSize = 80f)
     {
@@ -244,6 +246,13 @@ public sealed class PaperIslandWorld : System.IDisposable
     private void InitializeWorldObjects()
     {
         _worldObjects.Add(new FenceObject(initialPosition: Vector3.Zero, halfSize: PlayableHalfSize));
+
+        // Spawn Crafting Tables near the center of the island
+        const float tableY = 0.08f;
+        _worldObjects.Add(new CraftingTableObject(new Vector3(-3.5f, tableY, -2.5f), CraftingTableType.Workbench));
+        _worldObjects.Add(new CraftingTableObject(new Vector3(-1.2f, tableY, -4.5f), CraftingTableType.Forge));
+        _worldObjects.Add(new CraftingTableObject(new Vector3(1.2f, tableY, -4.5f), CraftingTableType.CookingPot));
+        _worldObjects.Add(new CraftingTableObject(new Vector3(3.5f, tableY, -2.5f), CraftingTableType.Loom));
 
         float ring = MathF.Max(4f, PlayableHalfSize - 2.8f);
         const float y = 0.08f;

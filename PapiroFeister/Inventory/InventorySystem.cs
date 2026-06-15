@@ -193,4 +193,75 @@ public sealed class InventorySystem
 
         return removed;
     }
+
+    public int GetItemCount(ItemType type)
+    {
+        if (type == null) return 0;
+        int count = 0;
+        for (int i = 0; i < HotbarSize; i++)
+        {
+            if (_hotbarSlots[i] != null && _hotbarSlots[i].Type.Id == type.Id)
+            {
+                count += _hotbarSlots[i].Quantity;
+            }
+        }
+        for (int i = 0; i < _backpackSlots.Length; i++)
+        {
+            if (_backpackSlots[i] != null && _backpackSlots[i].Type.Id == type.Id)
+            {
+                count += _backpackSlots[i].Quantity;
+            }
+        }
+        return count;
+    }
+
+    public bool RemoveItems(ItemType type, int quantity)
+    {
+        if (type == null || quantity <= 0) return true;
+        if (GetItemCount(type) < quantity) return false;
+
+        int remainingToRemove = quantity;
+
+        // Deduct from backpack first
+        for (int i = 0; i < _backpackSlots.Length; i++)
+        {
+            if (_backpackSlots[i] != null && _backpackSlots[i].Type.Id == type.Id)
+            {
+                if (_backpackSlots[i].Quantity > remainingToRemove)
+                {
+                    _backpackSlots[i].Quantity -= remainingToRemove;
+                    remainingToRemove = 0;
+                    break;
+                }
+                else
+                {
+                    remainingToRemove -= _backpackSlots[i].Quantity;
+                    _backpackSlots[i] = null;
+                }
+            }
+        }
+
+        if (remainingToRemove > 0)
+        {
+            for (int i = 0; i < HotbarSize; i++)
+            {
+                if (_hotbarSlots[i] != null && _hotbarSlots[i].Type.Id == type.Id)
+                {
+                    if (_hotbarSlots[i].Quantity > remainingToRemove)
+                    {
+                        _hotbarSlots[i].Quantity -= remainingToRemove;
+                        remainingToRemove = 0;
+                        break;
+                    }
+                    else
+                    {
+                        remainingToRemove -= _hotbarSlots[i].Quantity;
+                        _hotbarSlots[i] = null;
+                    }
+                }
+            }
+        }
+
+        return remainingToRemove == 0;
+    }
 }
