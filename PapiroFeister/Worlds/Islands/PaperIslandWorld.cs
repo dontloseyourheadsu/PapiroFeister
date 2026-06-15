@@ -42,6 +42,7 @@ public sealed class PaperIslandWorld : System.IDisposable
     private readonly short[] _quadIndices = [0, 1, 2, 2, 1, 3];
 
     public float PlayableHalfSize { get; }
+    public IReadOnlyList<WorldObject> WorldObjects => _worldObjects;
 
     public PaperIslandWorld(GraphicsDevice graphicsDevice, float playableHalfSize = 24f, float oceanHalfSize = 80f)
     {

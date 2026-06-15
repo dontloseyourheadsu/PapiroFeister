@@ -124,7 +124,7 @@ public class Game1 : Game
         {
             characterKeyboard = new KeyboardState();
         }
-        _playerCharacter.Update(dt, characterKeyboard, _previousKeyboardState, _paperIslandWorld.PlayableHalfSize);
+        _playerCharacter.Update(dt, characterKeyboard, _previousKeyboardState, _paperIslandWorld.PlayableHalfSize, _paperIslandWorld.WorldObjects);
 
         UpdateCamera();
         
