@@ -467,22 +467,23 @@ public sealed class InventoryUI : IDisposable
         int startY = 16;
         
         string[] instructions = new string[] {
-            "KEYS:",
+            "KEYS & CHEATS:",
             "  Tab / E  : Toggle Backpack",
             "  1 - 8    : Select Hotbar Item",
+            "  F        : Use Crafting Table (when near)",
+            "  I        : Give Crafting Materials (Cheat)",
+            "  L        : Gain 100 Skill XP (Cheat)",
             "  G        : Gain random test item",
-            "  U        : Cycle Backpack upgrade (+8 | +16 | +24)",
-            "  C        : Clear all inventory slots",
-            "  Q        : Drop / discard selected item",
-            "",
-            "INTERACTIONS (Backpack open):",
-            "  Left Click  : Select / Place / Swap items",
-            "  Right Click : Split stack / Place 1 item"
+            "  U        : Cycle Backpack upgrade",
+            "  C        : Clear inventory slots",
+            "  Q        : Drop selected item",
+            "  Left Clk : Interact with UIs",
+            "  Right Clk: Split slot item"
         };
 
         // Draw card background for instructions
         int width = 360;
-        int height = 188;
+        int height = 202;
         DrawFilledRectangle(spriteBatch, new Rectangle(startX, startY, width, height), PaperColor, BorderColor, 2);
 
         for (int i = 0; i < instructions.Length; i++)

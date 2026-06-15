@@ -219,6 +219,28 @@ public class Game1 : Game
             _inventorySystem.RemoveSelectedItem(1);
         }
 
+        if (keyboardState.IsKeyDown(Keys.I) && !_previousKeyboardState.IsKeyDown(Keys.I))
+        {
+            // Give basic crafting resources
+            _inventorySystem.AddItem(new Item(ItemRegistry.Wood, 15));
+            _inventorySystem.AddItem(new Item(ItemRegistry.Stone, 15));
+            _inventorySystem.AddItem(new Item(ItemRegistry.IronOre, 15));
+            _inventorySystem.AddItem(new Item(ItemRegistry.Fiber, 15));
+            _inventorySystem.AddItem(new Item(ItemRegistry.Clay, 15));
+            _inventorySystem.AddItem(new Item(ItemRegistry.RawFish, 5));
+            _inventorySystem.AddItem(new Item(ItemRegistry.Apple, 5));
+            AddAlert("Gained Crafting Materials!", Color.ForestGreen);
+        }
+
+        if (keyboardState.IsKeyDown(Keys.L) && !_previousKeyboardState.IsKeyDown(Keys.L))
+        {
+            // Grant XP to all skills to level them up for testing
+            foreach (SkillType skill in Enum.GetValues<SkillType>())
+            {
+                _playerCharacter.Skills.AddXP(skill, 100, out bool lvlUp);
+            }
+        }
+
         // 3. Freeze character movement inputs when managing panels (backpack or crafting)
         KeyboardState characterKeyboard = keyboardState;
         if (_inventoryUI.IsBackpackOpen || _craftingUI.IsOpen)
