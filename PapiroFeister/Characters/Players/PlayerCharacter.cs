@@ -35,6 +35,7 @@ public sealed class PlayerCharacter : IDisposable
     public Vector3 Position { get; private set; }
     public Vector3 Velocity { get; private set; }
     public Vector3 CameraForwardOnSurface { get; private set; } = Vector3.Forward;
+    public PlayerSkills Skills { get; } = new();
 
     public PlayerCharacter(GraphicsDevice graphicsDevice, float playableHalfSize)
     {
