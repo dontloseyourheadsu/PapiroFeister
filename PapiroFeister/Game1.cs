@@ -61,6 +61,7 @@ public class Game1 : Game
 
         // Initialize Inventory System
         ItemRegistry.Initialize(GraphicsDevice);
+        RecipeRegistry.Initialize();
         _proceduralFont = new ProceduralFont(GraphicsDevice);
         _inventorySystem = new InventorySystem();
         _inventoryUI = new InventoryUI(GraphicsDevice, _inventorySystem, _proceduralFont);
