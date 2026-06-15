@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -31,6 +32,16 @@ public class Game1 : Game
     private InventoryUI _inventoryUI;
     private CraftingUI _craftingUI;
     private Texture2D _pixel;
+
+    private struct AlertMessage
+    {
+        public string Text;
+        public Color TextColor;
+        public float Timer;
+        public float MaxTime;
+        public float Scale;
+    }
+    private readonly List<AlertMessage> _alerts = new();
 
     private const float CameraHorizontalDistance = 7f;
     private const float CameraFloorAngleDeg = 44f;
@@ -71,6 +82,18 @@ public class Game1 : Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new Color[] { Color.White });
 
+        // Hook Crafting UI and Skills events for screen notifications
+        _craftingUI.OnCraftSuccess += (recipe) =>
+        {
+            AddAlert($"Crafted {recipe.OutputQuantity}x {recipe.OutputType.Name}!", new Color(60, 160, 60), 3.0f, 1.5f);
+            AddAlert($"+{recipe.XpReward} {recipe.RequiredSkill} XP", new Color(255, 99, 71), 2.5f, 1.3f);
+        };
+
+        _playerCharacter.Skills.OnLevelUp += (skill, newLevel) =>
+        {
+            AddAlert($"[LEVEL UP] {skill} reached level {newLevel}!", new Color(255, 201, 14), 4.5f, 1.8f);
+        };
+
         // Setup starting inventory: 8 quick slots + backpack items
         _inventorySystem.AddItem(new Item(ItemRegistry.WoodenSword));
         _inventorySystem.AddItem(new Item(ItemRegistry.SteelPickaxe));
@@ -90,6 +113,22 @@ public class Game1 : Game
             Exit();
 
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        // Update active screen alerts
+        for (int i = _alerts.Count - 1; i >= 0; i--)
+        {
+            var alert = _alerts[i];
+            alert.Timer -= dt;
+            if (alert.Timer <= 0f)
+            {
+                _alerts.RemoveAt(i);
+            }
+            else
+            {
+                _alerts[i] = alert;
+            }
+        }
+
         var keyboardState = Keyboard.GetState();
         var mouseState = Mouse.GetState();
 
@@ -199,11 +238,13 @@ public class Game1 : Game
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.Black);
+        int sw = GraphicsDevice.Viewport.Width;
+        int sh = GraphicsDevice.Viewport.Height;
 
         _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque);
         _spriteBatch.Draw(
             _backgroundPaperTexture,
-            new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+            new Rectangle(0, 0, sw, sh),
             Color.White);
         _spriteBatch.End();
 
@@ -247,8 +288,6 @@ public class Game1 : Game
             };
             string promptText = $"Press [F] to use {labelName}";
             Vector2 sz = _proceduralFont.MeasureString(promptText, 1.5f);
-            int sw = GraphicsDevice.Viewport.Width;
-            int sh = GraphicsDevice.Viewport.Height;
             Vector2 pos = new Vector2((sw - sz.X) / 2f, sh - 150f);
 
             Rectangle cardRect = new Rectangle((int)pos.X - 12, (int)pos.Y - 6, (int)sz.X + 24, (int)sz.Y + 12);
@@ -261,6 +300,29 @@ public class Game1 : Game
         _inventoryUI.Draw(_spriteBatch);
         _craftingUI.Draw(_spriteBatch);
 
+        // Draw active floating alerts at top-center of screen
+        int alertY = 32;
+        for (int i = 0; i < _alerts.Count; i++)
+        {
+            var alert = _alerts[i];
+            Vector2 sz = _proceduralFont.MeasureString(alert.Text, alert.Scale);
+            Vector2 pos = new Vector2((sw - sz.X) / 2f, alertY);
+
+            // Calculate fade envelope if near expiry
+            float alpha = MathHelper.Clamp(alert.Timer / 0.5f, 0f, 1f);
+            Color cardColor = new Color(248, 244, 220) * alpha;
+            Color borderCol = new Color(38, 30, 20) * alpha;
+            Color textCol = alert.TextColor * alpha;
+
+            Rectangle cardRect = new Rectangle((int)pos.X - 16, (int)pos.Y - 6, (int)sz.X + 32, (int)sz.Y + 12);
+            _spriteBatch.Draw(_pixel, cardRect, cardColor);
+            DrawRectangleOutline(_spriteBatch, cardRect, borderCol, 2);
+
+            _proceduralFont.DrawString(_spriteBatch, alert.Text, pos, textCol, alert.Scale);
+
+            alertY += (int)sz.Y + 18;
+        }
+
         _spriteBatch.End();
 
         base.Draw(gameTime);
@@ -272,6 +334,18 @@ public class Game1 : Game
         spriteBatch.Draw(_pixel, new Rectangle(rect.X, rect.Y + rect.Height - thickness, rect.Width, thickness), color);
         spriteBatch.Draw(_pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
         spriteBatch.Draw(_pixel, new Rectangle(rect.X + rect.Width - thickness, rect.Y, thickness, rect.Height), color);
+    }
+
+    public void AddAlert(string text, Color color, float duration = 3.5f, float scale = 1.5f)
+    {
+        _alerts.Add(new AlertMessage
+        {
+            Text = text,
+            TextColor = color,
+            Timer = duration,
+            MaxTime = duration,
+            Scale = scale
+        });
     }
 
     private void UpdateCamera()
